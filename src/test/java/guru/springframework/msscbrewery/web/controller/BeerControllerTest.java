@@ -13,15 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
-import static org.junit.Assert.*;
 
-//Introduce for BDD
-import static org.mockito.BDDMockito.*;
-//Introduce for GET http
+import static org.mockito.BDDMockito.*; //for BDD
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;  //for put()
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;  //for post()
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;  //for get(url)
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;      //for content() and status()
-//Introduce for IS
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.is; //for is
 
 @WebMvcTest(BeerController.class)
 @RunWith(SpringRunner.class)
@@ -62,5 +60,31 @@ public class BeerControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(validBeer.getId().toString())))
                 .andExpect(jsonPath("$.beerName", is("Cascade")));
+    }
+
+    @Test
+    public void handlePost() throws Exception {
+        BeerDto beerDto = validBeer;
+        beerDto.setId(null);
+        BeerDto savedDto = BeerDto.builder().id(UUID.randomUUID()).beerName("Grolsch").build();
+        String beerDtoJson = objectMapper.writeValueAsString(beerDto);
+
+        given(beerService.saveNewBeer(any())).willReturn(savedDto);
+
+        mockMvc.perform(post("/api/v1/beer/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(beerDtoJson))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    public void handleUpdate() throws Exception {
+        BeerDto beerDto = validBeer;
+        String beerDtoJson = objectMapper.writeValueAsString(beerDto);
+
+        mockMvc.perform(put("/api/v1/beer/" + validBeer.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(beerDtoJson))
+                .andExpect(status().isNoContent());
     }
 }
